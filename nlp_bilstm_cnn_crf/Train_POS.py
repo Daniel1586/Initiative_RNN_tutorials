@@ -53,7 +53,7 @@ pickleFile = prepareDataset(embeddingsPath, datasets)
 
 ############################################################################################################
 #
-# 2.Network training
+# 2.Network training and fitting
 #
 ############################################################################################################
 # :: Load the embeddings and the dataset ::
