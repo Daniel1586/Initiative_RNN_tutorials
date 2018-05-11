@@ -13,7 +13,7 @@ from keras.preprocessing.text import Tokenizer
 
 max_words = 1000    # vocab大小
 batch_size = 32     # min-batch size
-epochs = 5          # 大循环次数
+epochs = 5          # 循环次数
 
 # 数据集来源路透社新闻专线,共11228条新闻,标记46个类别
 # 每条数据被编码为一条索引序列(索引数字越小,代表单词出现次数越多)
@@ -41,30 +41,24 @@ y_test = keras.utils.to_categorical(y_test, num_classes)
 print('----- y_train shape:', y_train.shape)
 print('----- y_test  shape:', y_test.shape)
 
-# 搭建网络模型
+# 搭建神经网络模型
 print('========== 3.Building model...')
 model = Sequential()
 # 第一层
-model.add(Dense(512, input_shape=(max_words,)))
+model.add(Dense(512, input_shape=(max_words,)))     # 输入(*,max_words), 输出(*,512)
 model.add(Activation('relu'))
 model.add(Dropout(0.5))
 # 第二层
-model.add(Dense(num_classes))
+model.add(Dense(num_classes))   # 输出(*,num_classes)
 model.add(Activation('softmax'))
 
-# 损失函数设置，优化函数，衡量标准
-model.compile(loss='categorical_crossentropy',
-              optimizer='adam',
-              metrics=['accuracy'])
+# 损失函数设置,优化函数设置,模型评估性能指标
+model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-# 训练和交叉验证
-history = model.fit(x_train, y_train,
-                    batch_size=batch_size,
-                    epochs=epochs,
-                    verbose=1,
-                    validation_split=0.1)
-score = model.evaluate(x_test, y_test,
-                       batch_size=batch_size, verbose=1)
-print('Test score:', score[0])
-print('Test accuracy:', score[1])
+# 神经网络训练和交叉验证模型性能
+history = model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs, verbose=1, validation_split=0.1)
+# 测试集性能测试
+score = model.evaluate(x_test, y_test, batch_size=batch_size, verbose=1)
+print('----- Test loss:', score[0])
+print('----- Test accuracy:', score[1])
 
