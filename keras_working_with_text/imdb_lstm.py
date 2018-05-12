@@ -11,11 +11,12 @@ from keras.layers import Dense, Embedding
 from keras.layers import LSTM
 from keras.datasets import imdb
 
-max_features = 20000
-maxlen = 80  # cut texts after this number of words (among top max_features most common words)
-batch_size = 32
+max_features = 20000    # vocab大小
+batch_size = 32         # min-batch size
+maxlen = 80             # 每条样本数据长度
 
-# 数据集来源IMDB影评,共11228条新闻,标记正面/负面两种评价
+
+# 数据集来源IMDB影评,共50000条影评,标记正面/负面两种评价
 # 每条数据被编码为一条索引序列(索引数字越小,代表单词出现次数越多)
 # num_words: 选取的每条数据里的索引值不能超过num_words
 print('========== 1.Loading data...')
@@ -23,30 +24,24 @@ print('========== 1.Loading data...')
 print('----- train sequences', len(x_train))
 print('----- test  sequences', len(x_test))
 
+# 对每条词索引组成的数据进行长度对齐,去掉数据前面或后面多余的单词;长度不够插入0
 print('========== 2.Pad sequences (samples x time)')
 x_train = sequence.pad_sequences(x_train, maxlen=maxlen)
 x_test = sequence.pad_sequences(x_test, maxlen=maxlen)
-print('x_train shape:', x_train.shape)
-print('x_test shape:', x_test.shape)
+print('----- x_train shape:', x_train.shape)
+print('----- x_test shape:', x_test.shape)
 
-print('Build model...')
+# 搭建神经网络模型
+print('========== 3.Build model...')
 model = Sequential()
-model.add(Embedding(max_features, 128))
+model.add(Embedding(max_features, 128))     # 将正整数下标转换为具有固定大小的向量,输出(*,80,128)
 model.add(LSTM(128, dropout=0.2, recurrent_dropout=0.2))
 model.add(Dense(1, activation='sigmoid'))
 
-# try using different optimizers and different optimizer configs
-model.compile(loss='binary_crossentropy',
-              optimizer='adam',
-              metrics=['accuracy'])
-
-print('Train...')
-model.fit(x_train, y_train,
-          batch_size=batch_size,
-          epochs=15,
-          validation_data=(x_test, y_test))
-score, acc = model.evaluate(x_test, y_test,
-                            batch_size=batch_size)
-print('Test score:', score)
-print('Test accuracy:', acc)
+# 神经网络编译/训练/测试集测试性能
+model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+model.fit(x_train, y_train, batch_size=batch_size, epochs=5, validation_data=(x_test, y_test))
+score, acc = model.evaluate(x_test, y_test, batch_size=batch_size)
+print('----- Test loss:', score)
+print('----- Test accuracy:', acc)
 
