@@ -44,9 +44,3 @@ model.add(Dense(1, activation='sigmoid'))
 # 神经网络编译/训练/测试集测试性能
 model.compile('adam', 'binary_crossentropy', metrics=['accuracy'])
 model.fit(x_train, y_train, batch_size=batch_size, epochs=5, validation_data=[x_test, y_test])
-
-
-
-
-
-
