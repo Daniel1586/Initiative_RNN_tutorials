@@ -15,7 +15,6 @@ max_features = 20000    # vocab大小
 batch_size = 32         # min-batch size
 maxlen = 80             # 每条样本数据长度
 
-
 # 数据集来源IMDB影评,共50000条影评,标记正面/负面两种评价
 # 每条数据被编码为一条索引序列(索引数字越小,代表单词出现次数越多)
 # num_words: 选取的每条数据里的索引值不能超过num_words
@@ -34,7 +33,9 @@ print('----- x_test shape:', x_test.shape)
 # 搭建神经网络模型
 print('========== 3.Build model...')
 model = Sequential()
+# input_dim=max_features单词表大小,output_dim=128为词向量维度
 model.add(Embedding(max_features, 128))     # 将正整数下标转换为具有固定大小的向量,输出(*,80,128)
+# units=128代表通过LSTM,词向量维度转换为128
 model.add(LSTM(128, dropout=0.2, recurrent_dropout=0.2))
 model.add(Dense(1, activation='sigmoid'))
 
