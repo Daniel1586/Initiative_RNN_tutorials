@@ -39,14 +39,14 @@ print('----- x_test shape:', x_test.shape)
 print('========== 3.Build model...')
 model = Sequential()
 
-# input_dim=max_features单词表大小,output_dim=embedding_dims=50为词向量维度
+# input_dim=max_features单词表大小,output_dim=embedding_dims=50为词向量维度,input_length=maxlen每条样本数据长度
 model.add(Embedding(max_features, embedding_dims, input_length=maxlen))     # 输出(*,400,50)
 model.add(Dropout(0.2))
 
 # 1维卷积层,卷积输出维度为kernel_size,卷积步长为strides
-model.add(Conv1D(filters, kernel_size, padding='valid', activation='relu', strides=1))
+model.add(Conv1D(filters, kernel_size, padding='valid', activation='relu', strides=1))  # 输出(*,398,250)
 # 对于时间信号的全局最大池化
-model.add(GlobalMaxPooling1D())
+model.add(GlobalMaxPooling1D())   # 输出(*,250)
 
 model.add(Dense(hidden_dims))   # 输出(*,250)
 model.add(Dropout(0.2))
@@ -57,4 +57,6 @@ model.add(Activation('sigmoid'))
 
 # 神经网络编译/训练/测试集测试性能
 model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+model.summary()
+
 model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs, validation_data=(x_test, y_test))
