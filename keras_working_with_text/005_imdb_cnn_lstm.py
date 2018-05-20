@@ -48,19 +48,20 @@ print('----- x_test shape:', x_test.shape)
 print('========== 3.Build model...')
 model = Sequential()
 
-# input_dim=max_features单词表大小,output_dim=embedding_dims=128为词向量维度
-model.add(Embedding(max_features, embedding_size, input_length=maxlen))     # 输出(*,100,50)
+# input_dim=max_features单词表大小,output_dim=embedding_dims=128为词向量维度,input_length=maxlen每条样本数据长度
+model.add(Embedding(max_features, embedding_size, input_length=maxlen))     # 输出(*,100,128)
 model.add(Dropout(0.25))
-model.add(Conv1D(filters, kernel_size, padding='valid', activation='relu', strides=1))
-model.add(MaxPooling1D(pool_size=pool_size))
-model.add(LSTM(lstm_output_size))
+model.add(Conv1D(filters, kernel_size, padding='valid', activation='relu', strides=1))  # 输出(*,96,64)
+model.add(MaxPooling1D(pool_size=pool_size))  # 输出(*,24,64)
+model.add(LSTM(lstm_output_size))             # 输出(*,70)
 model.add(Dense(1))
 model.add(Activation('sigmoid'))
 
 # 神经网络编译/训练/测试集测试性能
 model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+model.summary()
+
 model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs, validation_data=(x_test, y_test))
 score, acc = model.evaluate(x_test, y_test, batch_size=batch_size)
 print('----- Test score:', score)
 print('----- Test accuracy:', acc)
-
