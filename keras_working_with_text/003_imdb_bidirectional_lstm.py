@@ -34,13 +34,15 @@ y_test = np.array(y_test)
 # 搭建神经网络模型
 print('========== 3.Build model...')
 model = Sequential()
-# input_dim=max_features单词表大小,output_dim=128为词向量维度
+# input_dim=max_features单词表大小,output_dim=128为词向量维度,input_length=maxlen每条样本数据长度
 model.add(Embedding(max_features, 128, input_length=maxlen))    # 将正整数下标转换为具有固定大小的向量,输出(*,100,128)
 # units=64代表通过LSTM,词向量维度转换为64
-model.add(Bidirectional(LSTM(64)))
-model.add(Dropout(0.5))
+model.add(Bidirectional(LSTM(64)))    # 输出(*, 128)
+model.add(Dropout(0.5))               # 输出(*, 128)
 model.add(Dense(1, activation='sigmoid'))
 
 # 神经网络编译/训练/测试集测试性能
 model.compile('adam', 'binary_crossentropy', metrics=['accuracy'])
+model.summary()
+
 model.fit(x_train, y_train, batch_size=batch_size, epochs=5, validation_data=[x_test, y_test])
