@@ -34,13 +34,15 @@ print('----- x_test shape:', x_test.shape)
 print('========== 3.Build model...')
 model = Sequential()
 # input_dim=max_features单词表大小,output_dim=128为词向量维度
-model.add(Embedding(max_features, 128))     # 将正整数下标转换为具有固定大小的向量,输出(*,80,128)
+model.add(Embedding(max_features, 128))     # 将正整数下标转换为具有固定大小的向量,输出(*,*,128)
 # units=128代表通过LSTM,词向量维度转换为128
 model.add(LSTM(128, dropout=0.2, recurrent_dropout=0.2))
 model.add(Dense(1, activation='sigmoid'))
 
 # 神经网络编译/训练/测试集测试性能
 model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+model.summary()
+
 model.fit(x_train, y_train, batch_size=batch_size, epochs=5, validation_data=(x_test, y_test))
 score, acc = model.evaluate(x_test, y_test, batch_size=batch_size)
 print('----- Test loss:', score)
