@@ -66,27 +66,30 @@ from keras.models import Model
 from keras.preprocessing.sequence import pad_sequences
 
 
+# 将句子按空格间隔划分为单词和标点符号
+# Return the tokens of a sentence including punctuation.
+# tokenize('Bob dropped the apple. Where is the apple?')
+# ['Bob', 'dropped', 'the', 'apple', '.', 'Where', 'is', 'the', 'apple', '?']
 def tokenize(sent):
-    '''Return the tokens of a sentence including punctuation.
-    >>> tokenize('Bob dropped the apple. Where is the apple?')
-    ['Bob', 'dropped', 'the', 'apple', '.', 'Where', 'is', 'the', 'apple', '?']
-    '''
     return [x.strip() for x in re.split('(\W+)?', sent) if x.strip()]
 
 
+# 数据集以对话集+问题+回答组成,问题答案后序号表示和前面哪2句话相关
+# Parse stories provided in the bAbi tasks format
+# If only_supporting is true, only the sentences that support the answer are kept.
 def parse_stories(lines, only_supporting=False):
-    '''Parse stories provided in the bAbi tasks format
-    If only_supporting is true,
-    only the sentences that support the answer are kept.
-    '''
     data = []
     story = []
     for line in lines:
         line = line.decode('utf-8').strip()
         nid, line = line.split(' ', 1)
         nid = int(nid)
+
+        # 场景对话第1句,清空story变量
         if nid == 1:
             story = []
+
+        # 场景问题句
         if '\t' in line:
             q, a, supporting = line.split('\t')
             q = tokenize(q)
@@ -103,21 +106,22 @@ def parse_stories(lines, only_supporting=False):
         else:
             sent = tokenize(line)
             story.append(sent)
+
     return data
 
 
+# 按一定的格式获得数据集:每个set是一个完整的问题,含有2个list和1个str,前1个list是描述,后一个是问题,最后一个str是答案
+# Given a file name, read the file, retrieve the stories, and then convert the sentences into a single story.
+# If max_length is supplied, any stories longer than max_length tokens will be discarded.
 def get_stories(f, only_supporting=False, max_length=None):
-    '''Given a file name, read the file, retrieve the stories,
-    and then convert the sentences into a single story.
-    If max_length is supplied,
-    any stories longer than max_length tokens will be discarded.
-    '''
     data = parse_stories(f.readlines(), only_supporting=only_supporting)
     flatten = lambda data: reduce(lambda x, y: x + y, data)
-    data = [(flatten(story), q, answer) for story, q, answer in data if not max_length or len(flatten(story)) < max_length]
+    data = [(flatten(story), q, answer) for story, q, answer in data
+            if not max_length or len(flatten(story)) < max_length]
     return data
 
 
+# 根据预处理过程中找到的最长对话/最长问题/最长答案,将所有的对话/问题/答案向量全部前置padding到一个等长的size
 def vectorize_stories(data, word_idx, story_maxlen, query_maxlen):
     xs = []
     xqs = []
@@ -133,19 +137,19 @@ def vectorize_stories(data, word_idx, story_maxlen, query_maxlen):
         ys.append(y)
     return pad_sequences(xs, maxlen=story_maxlen), pad_sequences(xqs, maxlen=query_maxlen), np.array(ys)
 
+
 RNN = recurrent.LSTM
 EMBED_HIDDEN_SIZE = 50
 SENT_HIDDEN_SIZE = 100
 QUERY_HIDDEN_SIZE = 100
 BATCH_SIZE = 32
 EPOCHS = 40
-print('RNN / Embed / Sent / Query = {}, {}, {}, {}'.format(RNN,
-                                                           EMBED_HIDDEN_SIZE,
-                                                           SENT_HIDDEN_SIZE,
-                                                           QUERY_HIDDEN_SIZE))
+print('RNN / Embed / Sent / Query = {}, {}, {}, {}'.format(RNN, EMBED_HIDDEN_SIZE, SENT_HIDDEN_SIZE, QUERY_HIDDEN_SIZE))
 
+print('========== 1.Loading data...')
 try:
-    path = get_file('babi-tasks-v1-2.tar.gz', origin='https://s3.amazonaws.com/text-datasets/babi_tasks_1-20_v1-2.tar.gz')
+    path = get_file('babi_tasks_1-20_v1-2.tar.gz',
+                    origin='https://s3.amazonaws.com/text-datasets/babi_tasks_1-20_v1-2.tar.gz')
 except:
     print('Error downloading dataset, please download it manually:\n'
           '$ wget http://www.thespermwhale.com/jaseweston/babi/tasks_1-20_v1-2.tar.gz\n'
@@ -164,6 +168,7 @@ with tarfile.open(path) as tar:
     train = get_stories(tar.extractfile(challenge.format('train')))
     test = get_stories(tar.extractfile(challenge.format('test')))
 
+print('========== 2.Vectorizing sequence data...')
 vocab = set()
 for story, q, answer in train + test:
     vocab |= set(story + q + [answer])
@@ -178,14 +183,13 @@ query_maxlen = max(map(len, (x for _, x, _ in train + test)))
 x, xq, y = vectorize_stories(train, word_idx, story_maxlen, query_maxlen)
 tx, txq, ty = vectorize_stories(test, word_idx, story_maxlen, query_maxlen)
 
-print('vocab = {}'.format(vocab))
-print('x.shape = {}'.format(x.shape))
-print('xq.shape = {}'.format(xq.shape))
-print('y.shape = {}'.format(y.shape))
-print('story_maxlen, query_maxlen = {}, {}'.format(story_maxlen, query_maxlen))
+print('----- vocab = {}'.format(vocab))
+print('----- x.shape = {}'.format(x.shape))
+print('----- xq.shape = {}'.format(xq.shape))
+print('----- y.shape = {}'.format(y.shape))
+print('----- story_maxlen, query_maxlen = {}, {}'.format(story_maxlen, query_maxlen))
 
-print('Build model...')
-
+print('========== 3.Building model...')
 sentence = layers.Input(shape=(story_maxlen,), dtype='int32')
 encoded_sentence = layers.Embedding(vocab_size, EMBED_HIDDEN_SIZE)(sentence)
 encoded_sentence = layers.Dropout(0.3)(encoded_sentence)
@@ -202,15 +206,9 @@ merged = layers.Dropout(0.3)(merged)
 preds = layers.Dense(vocab_size, activation='softmax')(merged)
 
 model = Model([sentence, question], preds)
-model.compile(optimizer='adam',
-              loss='categorical_crossentropy',
-              metrics=['accuracy'])
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+model.summary()
 
-print('Training')
-model.fit([x, xq], y,
-          batch_size=BATCH_SIZE,
-          epochs=EPOCHS,
-          validation_split=0.05)
-loss, acc = model.evaluate([tx, txq], ty,
-                           batch_size=BATCH_SIZE)
-print('Test loss / test accuracy = {:.4f} / {:.4f}'.format(loss, acc))
+model.fit([x, xq], y, batch_size=BATCH_SIZE, epochs=EPOCHS, validation_split=0.05)
+loss, acc = model.evaluate([tx, txq], ty, batch_size=BATCH_SIZE)
+print('----- Test loss / test accuracy = {:.4f} / {:.4f}'.format(loss, acc))
