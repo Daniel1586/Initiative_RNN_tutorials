@@ -43,12 +43,12 @@ model = Sequential()
 model.add(Embedding(max_features, embedding_dims, input_length=maxlen))     # 输出(*,400,50)
 model.add(Dropout(0.2))
 
-# 1维卷积层,卷积输出维度为kernel_size,卷积步长为strides
+# 1维卷积层,卷积输出维度为filters,卷积步长为strides
 model.add(Conv1D(filters, kernel_size, padding='valid', activation='relu', strides=1))  # 输出(*,398,250)
 # 对于时间信号的全局最大池化
-model.add(GlobalMaxPooling1D())   # 输出(*,250)
+model.add(GlobalMaxPooling1D())     # 输出(*,250)
 
-model.add(Dense(hidden_dims))   # 输出(*,250)
+model.add(Dense(hidden_dims))       # 输出(*,250)
 model.add(Dropout(0.2))
 model.add(Activation('relu'))
 
